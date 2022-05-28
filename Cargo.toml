@@ -1,5 +1,5 @@
 [package]
-name = "text-format"
+name = "textf"
 authors = ["tafh-debug"]
 description = "Crate for formatting text. Without any depenencies. Only my code."
 version = "0.1.0"

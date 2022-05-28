@@ -1,4 +1,9 @@
+use std::collections::HashMap;
 use std::ops;
+mod commands;
+use commands::*;
+
+type Check<T> = core::option::Option<T>;
 
 enum Color {
     Black,
@@ -53,6 +58,21 @@ impl ops::Add<StringBuilder> for StringBuilder {
     }
 }
 
+#[derive(Debug)]
+struct Option {
+    flag: String,
+    value: String
+}
+
+impl Option {
+    pub fn new(flag: String, value: String) -> Option {
+        Self {
+            flag,
+            value
+        }
+    }
+}
+
 fn get_prefix(color: Color, is_background: bool) -> String {
     let mut temp = match color {
         Color::Black => 0,
@@ -104,18 +124,116 @@ fn paint_sym<S: AsRef<str>>(src: S, color: Color, sym: char) -> String {
 fn print_logo() {
     println!();
     println!("{}", set_font_background(Color::Black, Color::White, " -----  ----   \\   /  -----"));
-    println!("{}", set_font_background(Color::Black, Color::White, "   |    |--      \\/     |  "));
+    println!("{}", set_font_background(Color::Black, Color::White, "   |    |--     \\ /     |  "));
     println!("{}", set_font_background(Color::Black, Color::White, "   |    ----    / \\     |  "));
     println!();
 }
 
+fn print_help() {
+    print_logo();
+    println!("Author: TAFH-debug");
+    println!("Beautiful text formatting utility. \nUsage: ");
+    println!("      textf [<options>] <text>");
+    println!("Options: ");
+    println!("{}", "        --help - Shows this text.\n".to_owned() +
+        "        -f, --font <color> - Set texts font color.\n" +
+        "        -b, --background <color> - Set texts background color.\n" +
+        "        -r, --random - Generate and show random image.\n" +
+        "        -p, --print <color | style> - Prints info.\n");
+
+}
+
+fn get_color(text: String) -> Check<Color> {
+    match &*text {
+        "black" => Some(Color::Black),
+        "red" => Some(Color::Red),
+        "green" => Some(Color::Green),
+        "yellow" => Some(Color::Yellow),
+        "blue" => Some(Color::Blue),
+        "purple" => Some(Color::Purple),
+        "cyan" => Some(Color::Cyan),
+        "white" => Some(Color::White),
+        _ => None
+    }
+}
+
 fn main() {
     let args = std::env::args().collect::<Vec<String>>();
+    let mut options = HashMap::new();
+
+    //Soon
+    options.insert("-f", "");
+    options.insert("-b", "");
+    options.insert("-r", "");
+    options.insert("--font", "");
+    options.insert("--background", "");
+    options.insert("--random", "");
+
     if args.len() == 1 {
-        print_logo();
+        print_help();
         return;
     }
     if args[1] == "--help" {
-        print_logo();
+        print_help();
+        return;
     }
+    let mut is_option = false;
+    let mut uoptions = Vec::new();
+    let mut prev_flag = String::new();
+    let mut text = String::new();
+    for i in args {
+        if i.starts_with("-") {
+            if !options.contains_key(i.as_str()) {
+                println!("{}", font(Color::Red, "Error: invalid flag"));
+                return;
+            }
+            if prev_flag != "" {
+                uoptions.push(Option::new(prev_flag, "".to_string()));
+            }
+            prev_flag = i;
+            is_option = true;
+            continue;
+        }
+        if is_option {
+            uoptions.push(Option::new(prev_flag.clone(), i));
+            prev_flag = "".to_string();
+            is_option = false;
+            continue;
+        }
+        text = i;
+    }
+    let mut backgroundc = Color::Black;
+    let mut fontc = Color::White;
+    for i in uoptions {
+        if i.flag == "-r" {
+            random();
+            continue;
+        }
+        else if i.flag == "-b" {
+            backgroundc = match get_color(i.value) {
+                Some(n) => n,
+                None => {
+                    println!("{}", font(Color::Red, "Error: this color is not supported."));
+                    return;
+                },
+            }
+        }
+        else if i.flag == "-f" {
+            fontc = match get_color(i.value) {
+                Some(n) => n,
+                None => {
+                    println!("{}", font(Color::Red, "Error: this color is not supported."));
+                    return;
+                },
+            }
+        }
+        else if i.flag == "-p" {
+            match &*i.value {
+                "color" => {/*TODO*/},
+                "style" => {/*TODO*/},
+                _ => println!("{}", font(Color::Red, "Error: undefined info type")),
+            }
+        }
+    }
+    println!("{}", set_font_background(fontc, backgroundc, text));
 }
