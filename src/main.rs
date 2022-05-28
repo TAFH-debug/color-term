@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 use std::ops;
-mod commands;
-use commands::*;
 
 type Check<T> = core::option::Option<T>;
 
