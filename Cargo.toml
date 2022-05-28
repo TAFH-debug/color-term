@@ -1,0 +1,8 @@
+[package]
+name = "text-format"
+authors = ["tafh-debug"]
+description = "Crate for formatting text. Without any depenencies. Only my code."
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
