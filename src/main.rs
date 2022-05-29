@@ -1,75 +1,11 @@
+mod structs;
+
 use std::collections::HashMap;
-use std::ops;
+use std::sync::Mutex;
+use structs::*;
 
 type Check<T> = core::option::Option<T>;
-
-enum Color {
-    Black,
-    Red,
-    Green,
-    Yellow,
-    Blue,
-    Purple,
-    Cyan,
-    White
-}
-
 static ENDING: &'static str = "\x1b[0m";
-
-pub struct StringBuilder {
-    vec: Vec<char>
-}
-
-impl StringBuilder {
-    pub fn new() -> StringBuilder {
-        Self {
-            vec: Vec::new()
-        }
-    }
-
-    pub fn from(vec: Vec<char>) -> StringBuilder {
-        Self {
-            vec
-        }
-    }
-
-    pub fn add<S: AsRef<str>>(&mut self, string: S) {
-        self.vec.append(&mut string.as_ref().chars().collect::<Vec<char>>());
-    }
-
-    pub fn append(&mut self, c: char) {
-        self.vec.push(c);
-    }
-
-    pub fn build(&mut self) -> String {
-        self.vec.clone().into_iter().collect()
-    }
-}
-
-impl ops::Add<StringBuilder> for StringBuilder {
-    type Output = StringBuilder;
-
-    fn add(self, mut rhs: StringBuilder) -> Self::Output {
-        let mut temp = self.vec.clone();
-        temp.append(&mut rhs.vec);
-        StringBuilder::from(temp)
-    }
-}
-
-#[derive(Debug)]
-struct Option {
-    flag: String,
-    value: String
-}
-
-impl Option {
-    pub fn new(flag: String, value: String) -> Option {
-        Self {
-            flag,
-            value
-        }
-    }
-}
 
 fn get_prefix(color: Color, is_background: bool) -> String {
     let mut temp = match color {
@@ -87,6 +23,18 @@ fn get_prefix(color: Color, is_background: bool) -> String {
     "\x1b[".to_owned() + &*temp.to_string() + "m"
 }
 
+fn get_style_prefix(style: Style) -> String {
+    "\x1b[".to_owned() + &*match style {
+        Style::Normal => 0,
+        Style::Bold => 1,
+        Style::Faded => 2,
+        Style::Italic => 3,
+        Style::Underlined => 4,
+        Style::Flashing => 5,
+        Style::Strikethrough => 6
+    }.to_string() + "m"
+}
+
 fn background<S: AsRef<str>>(color: Color, text: S) -> String {
     let prefix = get_prefix(color, true);
     prefix + text.as_ref() + ENDING
@@ -97,8 +45,17 @@ fn font<S: AsRef<str>>(color: Color, text: S) -> String {
     prefix + text.as_ref() + ENDING
 }
 
-fn set_font_background<S: AsRef<str>>(fontc: Color, back: Color, text: S) -> String {
+fn style<S: AsRef<str>>(style: Style, text: S) -> String {
+    let prefix = get_style_prefix(style);
+    prefix + text.as_ref() + ENDING
+}
+
+fn font_background<S: AsRef<str>>(fontc: Color, back: Color, text: S) -> String {
     font(fontc, background(back, text))
+}
+
+fn style_font_background<S: AsRef<str>>(stylet: Style, fontc: Color, back: Color, text: S) -> String {
+    style(stylet, font(fontc, background(back, text)))
 }
 
 /**
@@ -121,9 +78,9 @@ fn paint_sym<S: AsRef<str>>(src: S, color: Color, sym: char) -> String {
 
 fn print_logo() {
     println!();
-    println!("{}", set_font_background(Color::Black, Color::White, " -----  ----   \\   /  -----"));
-    println!("{}", set_font_background(Color::Black, Color::White, "   |    |--     \\ /     |  "));
-    println!("{}", set_font_background(Color::Black, Color::White, "   |    ----    / \\     |  "));
+    println!("{}", font_background(Color::Black, Color::White, " -----  ----   \\   /  -----"));
+    println!("{}", font_background(Color::Black, Color::White, "   |    |--     \\ /     |  "));
+    println!("{}", font_background(Color::Black, Color::White, "   |    ----    / \\     |  "));
     println!();
 }
 
@@ -155,18 +112,21 @@ fn get_color(text: String) -> Check<Color> {
     }
 }
 
+fn get_style(text: String) -> Check<Style> {
+    match &*text {
+        "bold" => Some(Style::Bold),
+        "italic" => Some(Style::Italic),
+        "normal" => Some(Style::Normal),
+        "faded" => Some(Style::Faded),
+        "strikethrough" => Some(Style::Strikethrough),
+        "underlined" => Some(Style::Underlined),
+        "flashing" => Some(Style::Flashing),
+        _ => None
+    }
+}
+
 fn main() {
     let args = std::env::args().collect::<Vec<String>>();
-    let mut options = HashMap::new();
-
-    //Soon
-    options.insert("-f", "");
-    options.insert("-b", "");
-    options.insert("-r", "");
-    options.insert("--font", "");
-    options.insert("--background", "");
-    options.insert("--random", "");
-
     if args.len() == 1 {
         print_help();
         return;
@@ -175,6 +135,62 @@ fn main() {
         print_help();
         return;
     }
+
+    let mut options: HashMap<&str, fn(String) -> OptionType> = HashMap::new();
+
+    fn style_flag(arg: String) -> OptionType {
+        match get_style(arg) {
+            Some(n) => OptionType::Style(n),
+            None => {
+                println!("{}", font(Color::Red, "Error: this style is not supported."));
+                OptionType::Error
+            },
+        }
+    }
+    fn print_flag(arg: String) -> OptionType {
+        match &*arg {
+            "color" => {/*TODO*/},
+            "style" => {/*TODO*/},
+            _ => {
+                println!("{}", font(Color::Red, "Error: undefined info type"));
+                return OptionType::Error;
+            },
+        };
+        OptionType::Print
+    }
+    fn font_flag(arg: String) -> OptionType {
+        match get_color(arg) {
+            Some(n) => OptionType::Font(n),
+            None => {
+                println!("{}", font(Color::Red, "Error: this color is not supported."));
+                OptionType::Error
+            },
+        }
+    }
+    fn random_flag(arg: String) -> OptionType {
+        todo!()
+    }
+    fn background_flag(arg: String) -> OptionType {
+        match get_color(arg) {
+            Some(n) => OptionType::Background(n),
+            None => {
+                println!("{}", font(Color::Red, "Error: this color is not supported."));
+                OptionType::Error
+            },
+        }
+    }
+
+    options.insert("--print", print_flag);
+    options.insert("-p", print_flag);
+    options.insert("-s", style_flag);
+    options.insert("-f", font_flag);
+    options.insert("-b", background_flag);
+    options.insert("-r", random_flag);
+    options.insert("--style", style_flag);
+    options.insert("--font", font_flag);
+    options.insert("--background", background_flag);
+    options.insert("--random", random_flag);
+
     let mut is_option = false;
     let mut uoptions = Vec::new();
     let mut prev_flag = String::new();
@@ -200,38 +216,18 @@ fn main() {
         }
         text = i;
     }
-    let mut backgroundc = Color::Black;
-    let mut fontc = Color::White;
+    let mut background_c = Color::Black;
+    let mut font_c = Color::White;
+    let mut style_t = Style::Normal;
+
     for i in uoptions {
-        if i.flag == "-r" {
-            random();
-            continue;
-        }
-        else if i.flag == "-b" {
-            backgroundc = match get_color(i.value) {
-                Some(n) => n,
-                None => {
-                    println!("{}", font(Color::Red, "Error: this color is not supported."));
-                    return;
-                },
-            }
-        }
-        else if i.flag == "-f" {
-            fontc = match get_color(i.value) {
-                Some(n) => n,
-                None => {
-                    println!("{}", font(Color::Red, "Error: this color is not supported."));
-                    return;
-                },
-            }
-        }
-        else if i.flag == "-p" {
-            match &*i.value {
-                "color" => {/*TODO*/},
-                "style" => {/*TODO*/},
-                _ => println!("{}", font(Color::Red, "Error: undefined info type")),
-            }
+        match (options.get(&*i.flag.clone()).unwrap())(i.value) {
+            OptionType::Background(n) => background_c = n,
+            OptionType::Font(n) => font_c = n,
+            OptionType::Style(n) => style_t = n,
+            OptionType::Print | OptionType::Random => (),
+            OptionType::Error => return,
         }
     }
-    println!("{}", set_font_background(fontc, backgroundc, text));
+    println!("{}", style_font_background(style_t, font_c, background_c, text));
 }
