@@ -149,8 +149,14 @@ fn main() {
     }
     fn print_flag(arg: String) -> OptionType {
         match &*arg {
-            "color" => {/*TODO*/},
-            "style" => {/*TODO*/},
+            "color" => {
+                println!("Colors:");
+                println!("    black, red, green, yellow, blue, purple, cyan, white.");
+            },
+            "style" => {
+                println!("Styles:");
+                println!("    normal, bold, flashing, italic, underlined, faded, strikethrough.");
+            },
             _ => {
                 println!("{}", font(Color::Red, "Error: undefined info type"));
                 return OptionType::Error;
@@ -216,6 +222,9 @@ fn main() {
         }
         text = i;
     }
+    if prev_flag != "" {
+        uoptions.push(Option::new(prev_flag, "".to_string()));
+    }
     let mut background_c = Color::Black;
     let mut font_c = Color::White;
     let mut style_t = Style::Normal;
@@ -225,8 +234,7 @@ fn main() {
             OptionType::Background(n) => background_c = n,
             OptionType::Font(n) => font_c = n,
             OptionType::Style(n) => style_t = n,
-            OptionType::Print | OptionType::Random => (),
-            OptionType::Error => return,
+            OptionType::Error | OptionType::Print | OptionType::Random => return,
         }
     }
     println!("{}", style_font_background(style_t, font_c, background_c, text));
