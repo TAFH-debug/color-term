@@ -1,54 +1,13 @@
 mod structs;
+mod animations;
+mod console;
 
 use std::collections::HashMap;
-use std::sync::Mutex;
 use structs::*;
+use console::*;
 
 type Check<T> = core::option::Option<T>;
-static ENDING: &'static str = "\x1b[0m";
 
-fn get_prefix(color: Color, is_background: bool) -> String {
-    let mut temp = match color {
-        Color::Black => 0,
-        Color::Red => 1,
-        Color::Green => 2,
-        Color::Yellow => 3,
-        Color::Blue => 4,
-        Color::Purple => 5,
-        Color::Cyan => 6,
-        Color::White => 7
-    };
-    if is_background { temp += 40 }
-    else { temp += 30 }
-    "\x1b[".to_owned() + &*temp.to_string() + "m"
-}
-
-fn get_style_prefix(style: Style) -> String {
-    "\x1b[".to_owned() + &*match style {
-        Style::Normal => 0,
-        Style::Bold => 1,
-        Style::Faded => 2,
-        Style::Italic => 3,
-        Style::Underlined => 4,
-        Style::Flashing => 5,
-        Style::Strikethrough => 6
-    }.to_string() + "m"
-}
-
-fn background<S: AsRef<str>>(color: Color, text: S) -> String {
-    let prefix = get_prefix(color, true);
-    prefix + text.as_ref() + ENDING
-}
-
-fn font<S: AsRef<str>>(color: Color, text: S) -> String {
-    let prefix = get_prefix(color, false);
-    prefix + text.as_ref() + ENDING
-}
-
-fn style<S: AsRef<str>>(style: Style, text: S) -> String {
-    let prefix = get_style_prefix(style);
-    prefix + text.as_ref() + ENDING
-}
 
 fn font_background<S: AsRef<str>>(fontc: Color, back: Color, text: S) -> String {
     font(fontc, background(back, text))
@@ -56,24 +15,6 @@ fn font_background<S: AsRef<str>>(fontc: Color, back: Color, text: S) -> String 
 
 fn style_font_background<S: AsRef<str>>(stylet: Style, fontc: Color, back: Color, text: S) -> String {
     style(stylet, font(fontc, background(back, text)))
-}
-
-/**
-Replaces **sym** with a **color**
-*/
-fn paint_sym<S: AsRef<str>>(src: S, color: Color, sym: char) -> String {
-    let mut res = StringBuilder::new();
-    let prefix = get_prefix(color, true);
-    for i in src.as_ref().chars() {
-        if i == sym {
-            res.add(prefix.clone());
-            res.append(' ');
-            res.add(ENDING);
-            continue;
-        }
-        res.append(i);
-    }
-    res.build()
 }
 
 fn print_logo() {

@@ -83,3 +83,31 @@ impl Option {
         }
     }
 }
+
+pub fn get_prefix(color: Color, is_background: bool) -> String {
+    let mut temp = match color {
+        Color::Black => 0,
+        Color::Red => 1,
+        Color::Green => 2,
+        Color::Yellow => 3,
+        Color::Blue => 4,
+        Color::Purple => 5,
+        Color::Cyan => 6,
+        Color::White => 7
+    };
+    if is_background { temp += 40 }
+    else { temp += 30 }
+    format!("\x1b[{}m", temp)
+}
+
+pub fn get_style_prefix(style: Style) -> String {
+    format!("\x1b[{}m", match style {
+        Style::Normal => 0,
+        Style::Bold => 1,
+        Style::Faded => 2,
+        Style::Italic => 3,
+        Style::Underlined => 4,
+        Style::Flashing => 5,
+        Style::Strikethrough => 6
+    })
+}
