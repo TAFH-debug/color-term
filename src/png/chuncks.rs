@@ -1,11 +1,12 @@
+#[derive(Copy, Clone)]
 pub struct IhdrChunck {
-    width: u32,
-    height: u32,
-    bit_depth: u8,
-    color_type: u8,
-    zmethod: u8, //compressing method
-    fmethod: u8, //filtering method
-    icmethod: u8 //interlaced scan method
+    pub width: u32,
+    pub height: u32,
+    pub bit_depth: u8,
+    pub color_type: u8,
+    pub zmethod: u8, //compressing method
+    pub fmethod: u8, //filtering method
+    pub icmethod: u8 //interlaced scan method
 }
 
 impl IhdrChunck {

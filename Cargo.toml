@@ -6,3 +6,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+
+compress = "0.2.1" #For a while. Then someday I'll write it myself. (Not exactly)
+plotters = "0.3.1"
