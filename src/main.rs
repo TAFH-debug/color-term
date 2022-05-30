@@ -1,6 +1,9 @@
+extern crate core;
+
 mod structs;
 mod animations;
 mod console;
+mod png;
 
 use std::collections::HashMap;
 use structs::*;
