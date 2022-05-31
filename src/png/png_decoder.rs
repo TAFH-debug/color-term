@@ -1,10 +1,14 @@
 use std::fs::File;
 use std::io::Read;
-use crate::deflate;
+use plotters::drawing::IntoDrawingArea;
+use plotters::style::WHITE;
+use crate::{BitMapBackend, deflate};
 use crate::png::chuncks::*;
 
 const PNG_SIGNATURE: [u8; 8] = [137, 80, 78, 71, 13, 10, 26, 10];
 const BYTES_PER_PIXEL: i32 = 4;
+
+type Pixel = (u8, u8, u8, u8);
 
 struct Wrapper {
     vec: Vec<u8>,
@@ -23,7 +27,42 @@ impl Read for Wrapper {
     }
 }
 
-pub fn png<S: AsRef<str>>(filename: S) -> Result<(Vec<u8>, u32, u32), String> {
+///Shows png image in console. (Do not use for big images!)
+pub fn show_in_console<S: AsRef<str>>(filename: S) {
+    let pixels = decode(filename).unwrap();
+    let mut sizes = Vec::new();
+    for i in pixels {
+        sizes.push(i.len());
+        for j in i {
+            print!("\x1b[48;2;{};{};{}m ", j.0, j.1, j.2);
+        }
+        print!("\x1b[0;0m");
+        print!("\n");
+    }
+}
+
+pub fn decode<S: AsRef<str>>(filename: S) -> Result<Vec<Vec<Pixel>>, String> {
+    let mut fimage: Vec<Vec<Pixel>> = Vec::new();
+    let (image, width, height) = match raw_decode(filename) {
+        Ok(n) => n,
+        Err(s) => return Err(s),
+    };
+    let mut idx = 0;
+    fimage.push(Vec::new());
+    let mut counter = 0;
+    for i in 0..image.len()/4 {
+        if counter == width as usize {
+            fimage.push(Vec::new());
+            idx += 1;
+            counter = 0;
+        }
+        fimage[idx].push((image[i * 4], image[i * 4 + 1], image[i * 4 + 2], image[i * 4 + 3]));
+        counter += 1;
+    }
+    return Ok(fimage);
+}
+
+pub fn raw_decode<S: AsRef<str>>(filename: S) -> Result<(Vec<u8>, u32, u32), String> {
     let mut file = File::open(filename.as_ref()).expect("Invalid filename");
     let mut chuncks = Vec::new();
     let mut signature: [u8; 8] = [0; 8];
@@ -34,7 +73,7 @@ pub fn png<S: AsRef<str>>(filename: S) -> Result<(Vec<u8>, u32, u32), String> {
         return Err("Invalid signature.".to_string());
     }
 
-    println!("Start reading chuncks...");
+    //println!("Start reading chuncks...");
     read_chuncks_rec(&mut file, &mut chuncks);
 
     //Read and Check IHDR chunck
@@ -59,7 +98,7 @@ pub fn png<S: AsRef<str>>(filename: S) -> Result<(Vec<u8>, u32, u32), String> {
     decoder.read_to_end(&mut idata).expect("TODO: panic message");
 
     //Reverse filtering.
-    println!("Reverse filtering...");
+    //println!("Reverse filtering...");
     let mut recon: Vec<u8> = Vec::new();
     let stride = ihdr.width as i32 * BYTES_PER_PIXEL;
 
@@ -110,7 +149,6 @@ pub fn png<S: AsRef<str>>(filename: S) -> Result<(Vec<u8>, u32, u32), String> {
             recon.push((recon_x & 0xff) as u8);
         }
     }
-    println!("Recon: {:?}", recon);
     Ok((recon, ihdr.width, ihdr.height))
 }
 

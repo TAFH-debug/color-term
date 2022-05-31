@@ -75,21 +75,6 @@ fn get_style(text: String) -> Check<Style> {
 }
 
 fn main() {
-    // let (image, width, height) = png::png("./image.png").expect("No");
-    // let root = BitMapBackend::new("./out.png", (32, 32)).into_drawing_area();
-    // root.fill(&WHITE);
-    // for i in 0..width as usize {
-    //     for j in 0..height as usize {
-    //         let r = image[i + j];
-    //         let g = image[i + j + 1];
-    //         let b = image[i + j + 2];
-    //         let a = image[i + j + 3];
-    //         let color = plotters::style::RGBColor(r, g, b);
-    //         root.draw_pixel((i as i32, j as i32), &color);
-    //     }
-    // }
-    // root.present();
-    // return;
     let args = std::env::args().collect::<Vec<String>>();
     if args.len() == 1 {
         print_help();

@@ -1,11 +1,11 @@
 [package]
-name = "textf"
+name = "color-term"
 authors = ["tafh-debug"]
-description = "Crate for formatting text. Without any depenencies. Only my code."
+description = "Crate for colorful terminal."
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 
-compress = "0.2.1" #For a while. Then someday I'll write it myself. (Not exactly)
+compress = "0.2.1"
 plotters = "0.3.1"
