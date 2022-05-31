@@ -5,7 +5,7 @@ pub enum OptionType {
     Style(Style),
     Font(Color),
     Print,
-    Random,
+    Png,
     Error
 }
 pub enum Color {

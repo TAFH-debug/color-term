@@ -1,8 +1,5 @@
 use std::fs::File;
 use std::io::Read;
-use plotters::drawing::IntoDrawingArea;
-use plotters::style::WHITE;
-use crate::{BitMapBackend, deflate};
 use crate::png::chuncks::*;
 
 const PNG_SIGNATURE: [u8; 8] = [137, 80, 78, 71, 13, 10, 26, 10];

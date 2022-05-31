@@ -7,10 +7,6 @@ mod console;
 mod png;
 
 use std::collections::HashMap;
-use plotters::drawing::IntoDrawingArea;
-use plotters::element::BackendCoordOnly;
-use plotters::prelude::BitMapBackend;
-use plotters::style::{RGBAColor, WHITE};
 use structs::*;
 use console::*;
 
@@ -25,25 +21,17 @@ fn style_font_background<S: AsRef<str>>(stylet: Style, fontc: Color, back: Color
     style(stylet, font(fontc, background(back, text)))
 }
 
-fn print_logo() {
-    println!();
-    println!("{}", font_background(Color::Black, Color::White, " -----  ----   \\   /  -----"));
-    println!("{}", font_background(Color::Black, Color::White, "   |    |--     \\ /     |  "));
-    println!("{}", font_background(Color::Black, Color::White, "   |    ----    / \\     |  "));
-    println!();
-}
-
 fn print_help() {
-    print_logo();
     println!("Author: TAFH-debug");
-    println!("Beautiful text formatting utility. \nUsage: ");
+    println!("Colorful terminal utility. \nUsage: ");
     println!("      textf [<options>] <text>");
     println!("Options: ");
     println!("{}", "        --help - Shows this text.\n".to_owned() +
         "        -f, --font <color> - Set texts font color.\n" +
         "        -b, --background <color> - Set texts background color.\n" +
         "        -r, --random - Generate and show random image.\n" +
-        "        -p, --print <color | style> - Prints info.\n");
+        "        -p, --print <color | style> - Prints info.\n" +
+        "        --png <path> - Shows png file in console");
 
 }
 
@@ -122,8 +110,9 @@ fn main() {
             },
         }
     }
-    fn random_flag(arg: String) -> OptionType {
-        todo!()
+    fn png_flag(arg: String) -> OptionType {
+        png::show_in_console(arg);
+        OptionType::Png
     }
     fn background_flag(arg: String) -> OptionType {
         match get_color(arg) {
@@ -140,11 +129,10 @@ fn main() {
     options.insert("-s", style_flag);
     options.insert("-f", font_flag);
     options.insert("-b", background_flag);
-    options.insert("-r", random_flag);
+    options.insert("--png", png_flag);
     options.insert("--style", style_flag);
     options.insert("--font", font_flag);
     options.insert("--background", background_flag);
-    options.insert("--random", random_flag);
 
     let mut is_option = false;
     let mut uoptions = Vec::new();
@@ -183,7 +171,7 @@ fn main() {
             OptionType::Background(n) => background_c = n,
             OptionType::Font(n) => font_c = n,
             OptionType::Style(n) => style_t = n,
-            OptionType::Error | OptionType::Print | OptionType::Random => return,
+            OptionType::Error | OptionType::Print | OptionType::Png => return,
         }
     }
     println!("{}", style_font_background(style_t, font_c, background_c, text));
