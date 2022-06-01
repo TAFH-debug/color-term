@@ -14,8 +14,8 @@ impl IhdrChunck {
         if self.zmethod != 0 || self.fmethod != 0 {
             return Err("Invalid method".to_string());
         }
-        else if self.color_type != 6 || self.bit_depth != 8 || self.icmethod != 0 {
-            return Err("Not supported".to_string());
+        else if (self.color_type != 6 && self.color_type != 3) || self.bit_depth != 8 || self.icmethod != 0 {
+            return Err(format!("Not supported: {}, {}, {}", self.color_type, self.bit_depth, self.icmethod));
         }
         Ok(())
     }

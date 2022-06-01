@@ -4,9 +4,7 @@ pub enum OptionType {
     Background(Color),
     Style(Style),
     Font(Color),
-    Print,
-    Png,
-    Error
+    NoPrint
 }
 pub enum Color {
     Black,
@@ -52,6 +50,10 @@ impl StringBuilder {
 
     pub fn append(&mut self, c: char) {
         self.vec.push(c);
+    }
+
+    pub fn append_s(&mut self, c: String) {
+        self.vec.append(&mut c.chars().collect::<Vec<char>>());
     }
 
     pub fn build(&mut self) -> String {

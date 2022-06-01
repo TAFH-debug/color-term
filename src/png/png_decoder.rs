@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::Read;
+use inflate::inflate_bytes;
 use crate::png::chuncks::*;
 
 const PNG_SIGNATURE: [u8; 8] = [137, 80, 78, 71, 13, 10, 26, 10];
@@ -60,45 +61,55 @@ pub fn decode<S: AsRef<str>>(filename: S) -> Result<Vec<Vec<Pixel>>, String> {
 }
 
 pub fn raw_decode<S: AsRef<str>>(filename: S) -> Result<(Vec<u8>, u32, u32), String> {
-    let mut file = File::open(filename.as_ref()).expect("Invalid filename");
-    let mut chuncks = Vec::new();
-    let mut signature: [u8; 8] = [0; 8];
+    let (idata, ihdr, plte) = {
+        let mut file = File::open(filename.as_ref()).expect("Invalid filename");
+        let mut chuncks = Vec::new();
+        let mut signature: [u8; 8] = [0; 8];
 
-    file.read(&mut signature).expect("OS Error");
+        file.read(&mut signature).expect("OS Error");
 
-    if signature != PNG_SIGNATURE {
-        return Err("Invalid signature.".to_string());
-    }
-
-    //println!("Start reading chuncks...");
-    read_chuncks_rec(&mut file, &mut chuncks);
-
-    //Read and Check IHDR chunck
-    let (ihdr_n, ihdr_d) = &chuncks[0];
-    assert_eq!(ihdr_n, "IHDR");
-    let ihdr = IhdrChunck::from_bytes(ihdr_d.clone());
-    ihdr.check().expect("Oh no");
-
-    //Read IDAT chunks.
-    let mut idat_data = Vec::new();
-    for i in chuncks {
-        if i.0 == "IDAT" {
-            idat_data.append(&mut i.1.clone());
+        //Check png signature.
+        if signature != PNG_SIGNATURE {
+            return Err("Invalid signature.".to_string());
         }
-    }
 
-    let mut decoder = compress::zlib::Decoder::new(Wrapper {
-        vec: idat_data,
-        counter: 0,
-    });
-    let mut idata = Vec::new();
-    decoder.read_to_end(&mut idata).expect("TODO: panic message");
+        read_chuncks_rec(&mut file, &mut chuncks);
+
+        //Read and Check IHDR chunck
+        let (ihdr_n, ihdr_d) = &chuncks[0];
+        assert_eq!(ihdr_n, "IHDR");
+        let ihdr = IhdrChunck::from_bytes(ihdr_d.clone());
+        ihdr.check().expect("Oh no");
+
+        //Read IDAT chunks.
+        let mut idat_data = Vec::new();
+        let mut plte_data = Vec::new();
+        for i in chuncks {
+            if i.0 == "IDAT" {
+                idat_data.append(&mut i.1.clone());
+            }
+            if i.0 == "PLTE" {
+                plte_data = i.1;
+            }
+        }
+
+        let mut idata = inflate_bytes(idat_data.as_slice()).unwrap();
+
+        (idata, ihdr, plte_data)
+    };
+
+
+    if ihdr.color_type == 3 {
+        let mut recon = Vec::new();
+        for i in idata {
+            recon.append(&mut vec!(plte[i as usize], plte[i as usize + 1], plte[i as usize + 2], 255));
+        }
+        return Ok((recon, ihdr.width, ihdr.height));
+    }
 
     //Reverse filtering.
-    //println!("Reverse filtering...");
     let mut recon: Vec<u8> = Vec::new();
     let stride = ihdr.width as i32 * BYTES_PER_PIXEL;
-
     pub fn recon_a(r: i32, c: i32, recon: &Vec<u8>, strd: i32) -> u8 {
         return if c >= BYTES_PER_PIXEL {
             recon[(r * strd + c - BYTES_PER_PIXEL) as usize]
@@ -148,6 +159,7 @@ pub fn raw_decode<S: AsRef<str>>(filename: S) -> Result<(Vec<u8>, u32, u32), Str
     }
     Ok((recon, ihdr.width, ihdr.height))
 }
+
 
 fn paeth_predictor(a: i32, b: i32, c: i32) -> u8 {
     let p = (a + b - c);

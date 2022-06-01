@@ -1,4 +1,5 @@
-use std::io::{stdout, Write};
+use std::fs::File;
+use std::io::{BufRead, BufReader, stdout, Write};
 use std::thread;
 use std::time::Duration;
 use crate::*;
@@ -26,6 +27,38 @@ fn animate_loading() {
     }
 }
 
-pub fn animate<S: AsRef<str>>(text1: S, text2: S) {
-    animate_loading();
+pub fn show_animation(filename: String) {
+    let mut file = BufReader::new(File::open(filename).unwrap());
+    let mut frames = Vec::new();
+    let mut cur_frame = StringBuilder::new();
+    let mut reading_frame = false;
+    for i in file.lines() {
+        if i.as_ref().unwrap() == "#" {
+            if reading_frame {
+                frames.push(cur_frame.build());
+                cur_frame = StringBuilder::new();
+                reading_frame = false;
+            }
+            else {
+                reading_frame = true;
+            }
+            continue;
+        }
+        if reading_frame {
+            cur_frame.append_s(i.unwrap());
+        }
+    }
+    animate(frames);
+}
+
+pub fn animate(frames: Vec<String>) -> ! {
+    print!("\x1b[2J");
+    loop {
+        for i in &frames {
+            print!("{}", goto(0, 0));
+            print!("{}", i);
+            stdout().flush();
+            thread::sleep(Duration::from_millis(200));
+        }
+    }
 }

@@ -7,5 +7,5 @@ edition = "2021"
 
 [dependencies]
 
-compress = "0.2.1"
+inflate = "0.4.3"
 plotters = "0.3.1"

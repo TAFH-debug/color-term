@@ -1,6 +1,5 @@
 extern crate core;
 
-mod deflate;
 mod structs;
 mod animations;
 mod console;
@@ -9,6 +8,7 @@ mod png;
 use std::collections::HashMap;
 use structs::*;
 use console::*;
+use crate::animations::show_animation;
 
 type Check<T> = core::option::Option<T>;
 
@@ -80,9 +80,13 @@ fn main() {
             Some(n) => OptionType::Style(n),
             None => {
                 println!("{}", font(Color::Red, "Error: this style is not supported."));
-                OptionType::Error
+                OptionType::NoPrint
             },
         }
+    }
+    fn animation_flag(arg: String) -> OptionType {
+        show_animation(arg);
+        return OptionType::NoPrint;
     }
     fn print_flag(arg: String) -> OptionType {
         match &*arg {
@@ -96,34 +100,36 @@ fn main() {
             },
             _ => {
                 println!("{}", font(Color::Red, "Error: undefined info type"));
-                return OptionType::Error;
+                return OptionType::NoPrint;
             },
         };
-        OptionType::Print
+        OptionType::NoPrint
     }
     fn font_flag(arg: String) -> OptionType {
         match get_color(arg) {
             Some(n) => OptionType::Font(n),
             None => {
                 println!("{}", font(Color::Red, "Error: this color is not supported."));
-                OptionType::Error
+                OptionType::NoPrint
             },
         }
     }
     fn png_flag(arg: String) -> OptionType {
         png::show_in_console(arg);
-        OptionType::Png
+        OptionType::NoPrint
     }
     fn background_flag(arg: String) -> OptionType {
         match get_color(arg) {
             Some(n) => OptionType::Background(n),
             None => {
                 println!("{}", font(Color::Red, "Error: this color is not supported."));
-                OptionType::Error
+                OptionType::NoPrint
             },
         }
     }
 
+    options.insert("-a", animation_flag);
+    options.insert("--animation", animation_flag);
     options.insert("--print", print_flag);
     options.insert("-p", print_flag);
     options.insert("-s", style_flag);
@@ -171,7 +177,7 @@ fn main() {
             OptionType::Background(n) => background_c = n,
             OptionType::Font(n) => font_c = n,
             OptionType::Style(n) => style_t = n,
-            OptionType::Error | OptionType::Print | OptionType::Png => return,
+            OptionType::NoPrint => return,
         }
     }
     println!("{}", style_font_background(style_t, font_c, background_c, text));
